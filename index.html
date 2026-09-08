@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ME Token DApp</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; }
+    body { background-color: #0f172a; color: #f8fafc; padding-bottom: 70px; }
+    header { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: #1e293b; border-bottom: 1px solid #334155; }
+    h2 { font-size: 1.2rem; color: #38bdf8; }
+    .btn { background: #38bdf8; color: #0f172a; border: none; padding: 8px 16px; border-radius: 8px; font-weight: bold; cursor: pointer; }
+    .btn.primary { width: 100%; padding: 12px; margin-top: 10px; font-size: 1rem; }
+    
+    /* Layout Header khi đã kết nối */
+    .wallet-container { display: flex; align-items: center; gap: 10px; }
+    .balance-badge { background: #0f172a; border: 1px solid #334155; padding: 6px 12px; border-radius: 20px; font-size: 0.85rem; font-weight: bold; color: #38bdf8; }
+    .wallet-avatar { width: 34px; height: 34px; border-radius: 50%; border: 2px solid #38bdf8; background: #334155; object-fit: cover; }
+    .btn-icon-disconnect { background: #38bdf8; color: #0f172a; border: none; width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+    .btn-icon-disconnect svg { width: 18px; height: 18px; stroke: #ffffff; fill: none; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+    
+    #content { padding: 16px; }
+    .card { background: #1e293b; border-radius: 12px; padding: 16px; border: 1px solid #334155; margin-bottom: 16px; }
+    .card h3 { margin-bottom: 12px; color: #f1f5f9; font-size: 1.1rem; }
+    .input-group { margin-bottom: 12px; }
+    .input-group label { display: block; margin-bottom: 6px; font-size: 0.85rem; color: #94a3b8; }
+    .input-group input, .input-group select { width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #334155; background: #0f172a; color: #fff; font-size: 1rem; }
+    .info-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.9rem; }
+    nav { position: fixed; bottom: 0; left: 0; right: 0; background: #1e293b; display: flex; border-top: 1px solid #334155; }
+    nav button { flex: 1; background: none; border: none; color: #94a3b8; padding: 12px 0; font-size: 0.8rem; cursor: pointer; }
+    nav button:focus { color: #38bdf8; }
+  </style>
+</head>
+<body>
+  <header>
+    <h2>ME DApp</h2>
+    <div id="wallet-area">
+      <button class="btn" id="wallet-btn">Kết Nối Ví</button>
+    </div>
+  </header>
+
+  <main id="content"></main>
+
+  <nav>
+    <button data-tab="swap">Swap</button>
+    <button data-tab="wallet">Ví</button>
+    <button data-tab="info">Thống Kê</button>
+    <button data-tab="notifications">Thông Báo</button>
+  </nav>
+
+  <script type="module">
+    import { initApp } from './app.js';
+    document.addEventListener('DOMContentLoaded', initApp);
+  </script>
+</body>
+</html>
