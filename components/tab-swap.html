@@ -1,21 +1,269 @@
-<div class="card">
-  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-    <h3 style="margin: 0;">Giao Dịch Swap</h3>
-    <select id="swap-mode" style="background: #1e293b; color: white; border: 1px solid #334155; padding: 5px 10px; border-radius: 6px;">
-      <option value="buy">Mua ME (Dùng MON)</option>
-      <option value="sell">Bán ME (Lấy MON)</option>
-    </select>
+<div class="card swap-card">
+  <style>
+    .swap-card {
+      --swap-bg: #0a0f1c;
+      --swap-panel: #121a2c;
+      --swap-panel-in: #0d1526;
+      --swap-border: #22304a;
+      --swap-border-soft: #1a2438;
+      --swap-text: #eef2fb;
+      --swap-muted: #8290a8;
+      --swap-mon: #3fd0ff;
+      --swap-me: #ff8a65;
+      --swap-danger: #ff5d6c;
+      --swap-mono: ui-monospace, "JetBrains Mono", "SF Mono", Menlo, Consolas, monospace;
+    }
+
+    .swap-card .swap-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 14px;
+    }
+    .swap-card .swap-head h3 {
+      margin: 0;
+      color: var(--swap-text);
+      font-size: 1.05rem;
+      font-weight: 600;
+    }
+    .swap-card .swap-sub {
+      font-size: 0.72rem;
+      color: var(--swap-muted);
+    }
+
+    .swap-card .swap-stack {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .swap-card .swap-panel {
+      background: var(--swap-panel-in);
+      border: 1px solid var(--swap-border-soft);
+      border-radius: 12px;
+      padding: 12px 14px;
+      transition: border-color 0.15s ease;
+    }
+    .swap-card .swap-panel:focus-within {
+      border-color: var(--swap-border);
+    }
+
+    .swap-card .swap-panel-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    .swap-card .swap-label {
+      font-size: 0.78rem;
+      color: var(--swap-muted);
+    }
+
+    .swap-card .swap-balance-wrap {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .swap-card .swap-balance {
+      font-size: 0.72rem;
+      color: var(--swap-muted);
+      font-family: var(--swap-mono);
+    }
+    .swap-card .swap-max-btn {
+      font-size: 0.65rem;
+      font-weight: 700;
+      color: var(--swap-mon);
+      background: rgba(63, 208, 255, 0.1);
+      border: 1px solid rgba(63, 208, 255, 0.25);
+      border-radius: 999px;
+      padding: 2px 7px;
+      cursor: pointer;
+      line-height: 1.4;
+    }
+    .swap-card .swap-max-btn:hover {
+      background: rgba(63, 208, 255, 0.18);
+    }
+
+    .swap-card .swap-token {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-shrink: 0;
+      padding: 4px 8px 4px 4px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--swap-border-soft);
+    }
+    .swap-card .swap-token-badge {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.62rem;
+      font-weight: 700;
+      color: #061019;
+      flex-shrink: 0;
+    }
+    .swap-card .swap-token-badge.is-mon { background: var(--swap-mon); }
+    .swap-card .swap-token-badge.is-me { background: var(--swap-me); }
+    .swap-card .swap-token-symbol {
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--swap-text);
+    }
+
+    .swap-card .swap-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .swap-card input.swap-amount {
+      flex: 1;
+      min-width: 0;
+      background: transparent;
+      border: none;
+      outline: none;
+      color: var(--swap-text);
+      font-family: var(--swap-mono);
+      font-size: 1.35rem;
+      font-weight: 500;
+      padding: 0;
+    }
+    .swap-card input.swap-amount::placeholder { color: #3a475f; }
+    .swap-card input.swap-amount[readonly] { color: var(--swap-mon); }
+
+    .swap-card .swap-flip-wrap {
+      display: flex;
+      justify-content: center;
+      margin: -14px 0;
+      position: relative;
+      z-index: 2;
+    }
+    .swap-card .swap-flip {
+      width: 34px;
+      height: 34px;
+      border-radius: 10px;
+      background: var(--swap-panel);
+      border: 3px solid var(--swap-bg);
+      color: var(--swap-muted);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: transform 0.2s ease, color 0.15s ease, border-color 0.15s ease;
+    }
+    .swap-card .swap-flip:hover {
+      color: var(--swap-mon);
+      border-color: var(--swap-mon);
+    }
+    .swap-card .swap-flip.is-flipped svg { transform: rotate(180deg); }
+    .swap-card .swap-flip svg { transition: transform 0.2s ease; display: block; }
+
+    .swap-card .swap-rate {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.76rem;
+      color: var(--swap-muted);
+      margin: 12px 2px 16px;
+      font-family: var(--swap-mono);
+    }
+
+    .swap-card .swap-status {
+      display: none;
+      font-size: 0.8rem;
+      padding: 9px 12px;
+      border-radius: 8px;
+      margin-bottom: 12px;
+      line-height: 1.4;
+    }
+    .swap-card .swap-status.is-visible { display: block; }
+    .swap-card .swap-status.is-error {
+      background: rgba(255, 93, 108, 0.1);
+      color: var(--swap-danger);
+      border: 1px solid rgba(255, 93, 108, 0.25);
+    }
+    .swap-card .swap-status.is-success {
+      background: rgba(63, 208, 255, 0.08);
+      color: var(--swap-mon);
+      border: 1px solid rgba(63, 208, 255, 0.25);
+    }
+    .swap-card .swap-status.is-pending {
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--swap-text);
+      border: 1px solid var(--swap-border-soft);
+    }
+
+    .swap-card button#swap-btn {
+      width: 100%;
+      padding: 13px;
+      font-size: 0.98rem;
+      font-weight: 600;
+      border-radius: 12px;
+    }
+  </style>
+
+  <div class="swap-head">
+    <h3>Giao dịch swap</h3>
+    <span class="swap-sub">MON &harr; ME</span>
   </div>
 
-  <div style="margin-bottom: 12px;">
-    <label style="font-size: 0.85rem; color: #94a3b8; display: block; margin-bottom: 4px;">Bạn trả</label>
-    <input type="number" id="pay-amount" placeholder="0.0" style="width: 100%; padding: 10px; background: #0f172a; border: 1px solid #334155; color: white; border-radius: 8px; font-size: 1rem;">
+  <select id="swap-mode" style="display:none;">
+    <option value="buy">buy</option>
+    <option value="sell">sell</option>
+  </select>
+
+  <div class="swap-stack">
+    <div class="swap-panel">
+      <div class="swap-panel-top">
+        <span class="swap-label">Bạn trả</span>
+        <span class="swap-balance-wrap">
+          <span class="swap-balance" id="pay-balance">Số dư: --</span>
+          <button type="button" class="swap-max-btn" id="pay-max-btn">MAX</button>
+        </span>
+      </div>
+      <div class="swap-row">
+        <input type="number" id="pay-amount" class="swap-amount" placeholder="0.0" inputmode="decimal">
+        <div class="swap-token" id="pay-token">
+          <span class="swap-token-badge is-mon" id="pay-token-badge">M</span>
+          <span class="swap-token-symbol" id="pay-token-symbol">MON</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="swap-flip-wrap">
+      <div class="swap-flip" id="swap-flip-btn" role="button" tabindex="0" aria-label="Đổi chiều giao dịch">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M17 3v12M17 15l-4-4M17 15l4-4"></path>
+          <path d="M7 21V9M7 9l-4 4M7 9l4 4"></path>
+        </svg>
+      </div>
+    </div>
+
+    <div class="swap-panel">
+      <div class="swap-panel-top">
+        <span class="swap-label">Bạn nhận (ước tính)</span>
+        <span class="swap-balance" id="receive-balance">Số dư: --</span>
+      </div>
+      <div class="swap-row">
+        <input type="text" id="receive-amount" class="swap-amount" placeholder="0.0" readonly>
+        <div class="swap-token" id="receive-token">
+          <span class="swap-token-badge is-me" id="receive-token-badge">ME</span>
+          <span class="swap-token-symbol" id="receive-token-symbol">ME</span>
+        </div>
+      </div>
+    </div>
   </div>
 
-  <div style="margin-bottom: 20px;">
-    <label style="font-size: 0.85rem; color: #94a3b8; display: block; margin-bottom: 4px;">Bạn nhận (Ước tính)</label>
-    <input type="text" id="receive-amount" placeholder="0.0" readonly style="width: 100%; padding: 10px; background: #0f172a; border: 1px solid #334155; color: #38bdf8; border-radius: 8px; font-size: 1rem; font-weight: bold;">
+  <div class="swap-rate" id="swap-rate-line" style="display:none;">
+    <span>Tỉ giá</span>
+    <span id="swap-rate-value">—</span>
   </div>
 
-  <button class="btn" id="swap-btn" style="width: 100%; padding: 12px; font-size: 1rem; font-weight: bold;">Xác Nhận Giao Dịch</button>
+  <div class="swap-status" id="swap-status"></div>
+
+  <button class="btn" id="swap-btn">Xác nhận giao dịch</button>
 </div>
