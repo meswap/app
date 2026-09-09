@@ -175,24 +175,19 @@ hr {
 }
 
 .wallet-card {
-  margin-top: 18px;
-  padding: 18px;
+  margin-top: 12px;
+  padding: 10px 14px;
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 20px;
-  box-shadow: 0 8px 28px rgba(20, 16, 28, 0.06);
-}
-
-.wallet-card h2 {
-  margin-top: 0;
-  margin-bottom: 14px;
+  border-radius: 14px;
+  box-shadow: 0 4px 16px rgba(20, 16, 28, 0.05);
 }
 
 .wallet-balance {
   display: flex;
   justify-content: space-between;
-  gap: 16px;
-  padding: 10px 0;
+  gap: 12px;
+  padding: 6px 0;
   border-top: 1px solid var(--border);
 }
 
@@ -349,4 +344,230 @@ hr {
   background: var(--surface);
   color: var(--text-h);
   font-weight: 700;
+}
+
+.price-change-row {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 4px;
+  margin: 10px 0 14px;
+  padding: 10px 8px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  box-shadow: 0 4px 16px rgba(20, 16, 28, 0.05);
+}
+
+.price-change-item {
+  min-width: 0;
+  text-align: center;
+}
+
+.price-change-item span {
+  display: block;
+  margin-bottom: 2px;
+  font-size: 11px;
+  color: var(--text);
+}
+
+.price-change-item strong {
+  display: block;
+  font-size: clamp(10px, 3vw, 12px);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.price-up {
+  color: #079455;
+}
+
+.price-down {
+  color: var(--danger);
+}
+
+.price-flat {
+  color: var(--text);
+}
+
+/* ===== UI polish ===== */
+
+body {
+  background:
+    radial-gradient(circle at top, rgba(155, 53, 244, 0.06), transparent 260px),
+    var(--bg);
+}
+
+#root {
+  padding: 14px;
+  background: transparent;
+}
+
+.app-header {
+  margin: 10px 0 16px;
+}
+
+.app-title h1 {
+  font-size: 34px;
+  font-weight: 800;
+  letter-spacing: -1px;
+}
+
+.app-title span {
+  margin-top: 5px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.wallet-button {
+  min-height: 46px;
+  padding: 10px 15px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.88);
+  box-shadow: 0 4px 14px rgba(20, 16, 28, 0.05);
+}
+
+.wallet-card {
+  margin-top: 10px;
+  padding: 8px 14px;
+  border-radius: 18px;
+  box-shadow: 0 6px 22px rgba(20, 16, 28, 0.05);
+}
+
+.wallet-balance {
+  padding: 8px 0;
+  font-size: 15px;
+}
+
+.wallet-balance strong {
+  font-size: 16px;
+  font-weight: 750;
+}
+
+.price-change-row {
+  margin: 10px 0 14px;
+  padding: 9px 6px;
+  border-radius: 18px;
+  box-shadow: 0 6px 22px rgba(20, 16, 28, 0.05);
+}
+
+.price-change-item span {
+  margin-bottom: 3px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+}
+
+.price-change-item strong {
+  font-size: clamp(10px, 3vw, 12px);
+  font-weight: 800;
+}
+
+.swap-card {
+  margin-top: 14px;
+  padding: 16px;
+  border-radius: 24px;
+  box-shadow: 0 10px 34px rgba(20, 16, 28, 0.07);
+}
+
+.swap-tabs {
+  gap: 4px;
+  margin-bottom: 20px;
+  padding: 4px;
+  border-radius: 16px;
+}
+
+.swap-tabs button {
+  min-height: 48px;
+  border-radius: 13px;
+  font-size: 16px;
+  transition:
+    background 0.18s ease,
+    color 0.18s ease,
+    box-shadow 0.18s ease,
+    transform 0.12s ease;
+}
+
+.swap-tabs button:active {
+  transform: scale(0.98);
+}
+
+.swap-tabs button.active {
+  box-shadow: 0 4px 12px rgba(20, 16, 28, 0.08);
+}
+
+.swap-panel h2 {
+  margin: 2px 0 16px;
+  font-size: 22px;
+  letter-spacing: -0.3px;
+}
+
+.swap-panel p {
+  font-size: 14px;
+}
+
+.swap-panel input {
+  min-height: 58px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: #fbfafc;
+  color: var(--text-h);
+  outline: none;
+  transition:
+    border-color 0.18s ease,
+    box-shadow 0.18s ease,
+    background 0.18s ease;
+}
+
+.swap-panel input:focus {
+  border-color: rgba(155, 53, 244, 0.5);
+  background: var(--surface);
+  box-shadow: 0 0 0 4px rgba(155, 53, 244, 0.08);
+}
+
+.swap-panel input + button {
+  min-width: 82px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--code-bg);
+  color: var(--text-h);
+  font-weight: 700;
+}
+
+.swap-panel > button:last-of-type {
+  min-height: 52px;
+  border: 0;
+  border-radius: 15px;
+  background: var(--accent);
+  color: #fff;
+  box-shadow: 0 8px 20px rgba(155, 53, 244, 0.22);
+  transition:
+    transform 0.12s ease,
+    opacity 0.18s ease;
+}
+
+.swap-panel > button:last-of-type:active:not(:disabled) {
+  transform: scale(0.985);
+}
+
+.swap-panel > button:last-of-type:disabled {
+  background: #ece9ef;
+  color: #aaa4b1;
+  box-shadow: none;
+}
+
+.stats-card {
+  border-radius: 24px;
+  box-shadow: 0 10px 34px rgba(20, 16, 28, 0.06);
+}
+
+.app-title h1 {
+  color: var(--accent);
+}
+
+.swap-panel .swap-result {
+  margin-top: 12px;
+}
+
+.swap-panel > button:last-of-type {
+  margin-top: -6px;
 }

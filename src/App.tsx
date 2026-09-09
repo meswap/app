@@ -11,6 +11,7 @@ import {
   publicClient,
   verifyMEContract,
   checkReserveSolvent,
+  getPriceChanges,
 } from './services/meContract'
 import {
   switchToMonad,
@@ -33,6 +34,35 @@ function formatDisplay(value: string, decimals = 6) {
   })
 }
 
+
+function formatSwapValue(value: string) {
+  if (value === '-') return '-'
+
+  const n = Number(value)
+  if (!Number.isFinite(n)) return value
+
+  return n.toLocaleString('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })
+}
+
+function floorTo2Decimals(value: string) {
+  const n = Number(value)
+  if (!Number.isFinite(n)) return value
+
+  return (Math.floor(n * 100) / 100).toFixed(2)
+}
+
+function formatPriceChange(value: number) {
+  if (!Number.isFinite(value)) return '0.000%'
+
+  const normalized = Math.abs(value) < 0.0005 ? 0 : value
+  const sign = normalized > 0 ? '+' : ''
+
+  return `${sign}${normalized.toFixed(3)}%`
+}
+
 function App() {
   const [swapTab, setSwapTab] = useState<'buy' | 'sell'>('buy')
   const [contractCopied, setContractCopied] = useState(false)
@@ -42,7 +72,6 @@ function App() {
   const [remaining, setRemaining] = useState('Đang đọc...')
   const [circulating, setCirculating] = useState('Đang đọc...')
   const [virtualReserve, setVirtualReserve] = useState('Đang đọc...')
-  const [actualMon, setActualMon] = useState('Đang đọc...')
   const [surplusMon, setSurplusMon] = useState('Đang đọc...')
   const [reserveSolvent, setReserveSolvent] = useState<boolean | null>(null)
 
@@ -76,10 +105,19 @@ function App() {
   const [walletError, setWalletError] = useState('')
   const [error, setError] = useState('')
 
+  const [priceChanges, setPriceChanges] = useState({
+    h1: 0,
+    d1: 0,
+    w1: 0,
+    m1: 0,
+    y1: 0,
+  })
+
   async function loadMarket() {
-    const [priceResult, stats] = await Promise.all([
+    const [priceResult, stats, changes] = await Promise.all([
       getCurrentPrice(),
       getStats(),
+      getPriceChanges(),
     ])
 
     setPrice(formatEther(priceResult))
@@ -87,9 +125,9 @@ function App() {
     setRemaining(formatEther(stats.remaining))
     setCirculating(formatEther(stats.circulating))
     setVirtualReserve(formatEther(stats.virtualReserve))
-    setActualMon(formatEther(stats.actual))
     setSurplusMon(formatEther(stats.surplus))
     setReserveSolvent(stats.solvent)
+    setPriceChanges(changes)
   }
 
   useEffect(() => {
@@ -615,8 +653,6 @@ async function copyText(text: string) {
 
       {wallet && (
         <section className="wallet-card">
-          <h2>Wallet</h2>
-
           <div className="wallet-balance">
             <span>MON Balance</span>
             <strong>{formatDisplay(monBalance, 6)} MON</strong>
@@ -628,6 +664,35 @@ async function copyText(text: string) {
           </div>
         </section>
       )}
+
+      <div className="price-change-row">
+        {[
+          ['1H', priceChanges.h1],
+          ['1D', priceChanges.d1],
+          ['1W', priceChanges.w1],
+          ['1T', priceChanges.m1],
+          ['1N', priceChanges.y1],
+        ].map(([label, value]) => {
+          const change = value as number
+
+          return (
+            <div className="price-change-item" key={label as string}>
+              <span>{label}</span>
+              <strong
+                className={
+                  change > 0
+                    ? 'price-up'
+                    : change < 0
+                      ? 'price-down'
+                      : 'price-flat'
+                }
+              >
+                {formatPriceChange(change)}
+              </strong>
+            </div>
+          )
+        })}
+      </div>
 
       <section className="swap-card">
         <div className="swap-tabs">
@@ -650,9 +715,7 @@ async function copyText(text: string) {
 
       {swapTab === 'buy' && (
         <div className="swap-panel">
-      <h2>Buy ME</h2>
 
-      <p>You Pay</p>
 
       <div style={{ display: 'flex', gap: '8px' }}>
         <input
@@ -676,7 +739,9 @@ async function copyText(text: string) {
               const gasReserve = parseEther('0.01')
 
               if (balance > gasReserve) {
-                setBuyAmount(formatEther(balance - gasReserve))
+                setBuyAmount(
+                  floorTo2Decimals(formatEther(balance - gasReserve))
+                )
               }
             }
           }}
@@ -685,26 +750,25 @@ async function copyText(text: string) {
         </button>
       </div>
 
-      <p>MON</p>
 
-      <p>You Receive</p>
-
-      <strong style={{ fontSize: '22px' }}>
-        {buyQuote} ME
-      </strong>
+      <p className="swap-result">
+        You Receive:{' '}
+        <strong>{formatSwapValue(buyQuote)} ME</strong>
+      </p>
 
       <p>
         Slippage: <strong>1%</strong>
       </p>
 
-      <p>Minimum Received</p>
-
-      <strong>
-        {minReceived} ME
-      </strong>
+      <p className="swap-result">
+        Minimum Received:{' '}
+        <strong>{formatSwapValue(minReceived)} ME</strong>
+      </p>
 
       <br />
       <br />
+
+
 
       <button
         onClick={handleBuy}
@@ -754,9 +818,7 @@ async function copyText(text: string) {
 
       {swapTab === 'sell' && (
         <div className="swap-panel">
-      <h2>Sell ME</h2>
 
-      <p>You Sell</p>
 
       <div style={{ display: 'flex', gap: '8px' }}>
         <input
@@ -776,7 +838,7 @@ async function copyText(text: string) {
           type="button"
           onClick={() => {
             if (meBalance !== '-') {
-              setSellAmount(meBalance)
+              setSellAmount(floorTo2Decimals(meBalance))
             }
           }}
         >
@@ -784,23 +846,20 @@ async function copyText(text: string) {
         </button>
       </div>
 
-      <p>ME</p>
 
-      <p>You Receive</p>
-
-      <strong style={{ fontSize: '22px' }}>
-        {sellQuote} MON
-      </strong>
+      <p className="swap-result">
+        You Receive:{' '}
+        <strong>{formatSwapValue(sellQuote)} MON</strong>
+      </p>
 
       <p>
         Slippage: <strong>1%</strong>
       </p>
 
-      <p>Minimum Received</p>
-
-      <strong>
-        {sellMinReceived} MON
-      </strong>
+      <p className="swap-result">
+        Minimum Received:{' '}
+        <strong>{formatSwapValue(sellMinReceived)} MON</strong>
+      </p>
 
       {sellQuoteError && (
         <p style={{ color: 'red' }}>
@@ -810,6 +869,8 @@ async function copyText(text: string) {
 
       <br />
       <br />
+
+
 
       <button
         onClick={handleSell}
@@ -866,7 +927,6 @@ async function copyText(text: string) {
       <section className="stats-card">
         <h2>Contract Stats</h2>
 
-      <p>Contract:</p>
 
       <div className="contract-address">
         <code title={ME_ADDRESS}>
@@ -911,10 +971,6 @@ async function copyText(text: string) {
           <strong>{formatDisplay(virtualReserve, 6)} MON</strong>
         </div>
 
-        <div className="stat-row">
-          <span>Actual MON</span>
-          <strong>{formatDisplay(actualMon, 6)} MON</strong>
-        </div>
 
         <div className="stat-row">
           <span>Surplus MON</span>

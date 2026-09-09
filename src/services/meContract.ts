@@ -194,3 +194,110 @@ export async function sellME(
 
   return hash
 }
+
+export const ME_DEPLOY_BLOCK = 102_915_442n
+export const ME_DEPLOY_TIMESTAMP = 1_788_833_043
+
+export async function findBlockAtOrBeforeTimestamp(
+  targetTimestamp: number
+) {
+  const latest = await publicClient.getBlock()
+
+  let low = ME_DEPLOY_BLOCK
+  let high = latest.number
+
+  if (targetTimestamp < ME_DEPLOY_TIMESTAMP) {
+    return null
+  }
+
+  while (low <= high) {
+    const mid = (low + high) / 2n
+    const block = await publicClient.getBlock({
+      blockNumber: mid,
+    })
+
+    const blockTime = Number(block.timestamp)
+
+    if (blockTime <= targetTimestamp) {
+      low = mid + 1n
+    } else {
+      high = mid - 1n
+    }
+  }
+
+  return high >= ME_DEPLOY_BLOCK ? high : null
+}
+
+export async function getPriceAtBlock(blockNumber: bigint) {
+  return publicClient.readContract({
+    address: ME_ADDRESS,
+    abi: ME_ABI,
+    functionName: 'currentPrice',
+    blockNumber,
+  })
+}
+
+export type PriceChanges = {
+  h1: number
+  d1: number
+  w1: number
+  m1: number
+  y1: number
+}
+
+export async function getPriceChanges(): Promise<PriceChanges> {
+  const latest = await publicClient.getBlock()
+  const now = Number(latest.timestamp)
+
+  const currentPrice = await getCurrentPrice()
+
+  const periods = {
+    h1: 60 * 60,
+    d1: 24 * 60 * 60,
+    w1: 7 * 24 * 60 * 60,
+    m1: 30 * 24 * 60 * 60,
+    y1: 365 * 24 * 60 * 60,
+  } as const
+
+  const result: PriceChanges = {
+    h1: 0,
+    d1: 0,
+    w1: 0,
+    m1: 0,
+    y1: 0,
+  }
+
+  for (const key of Object.keys(periods) as Array<keyof PriceChanges>) {
+    const targetTimestamp = now - periods[key]
+
+    if (targetTimestamp < ME_DEPLOY_TIMESTAMP) {
+      result[key] = 0
+      continue
+    }
+
+    try {
+      const blockNumber =
+        await findBlockAtOrBeforeTimestamp(targetTimestamp)
+
+      if (blockNumber === null) {
+        result[key] = 0
+        continue
+      }
+
+      const oldPrice = await getPriceAtBlock(blockNumber)
+
+      if (oldPrice <= 0n) {
+        result[key] = 0
+        continue
+      }
+
+      result[key] =
+        (Number(currentPrice) / Number(oldPrice) - 1) * 100
+    } catch (error) {
+      console.error(`Không đọc được lịch sử giá ${key}`, error)
+      result[key] = 0
+    }
+  }
+
+  return result
+}
