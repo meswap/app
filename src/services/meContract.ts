@@ -1,4 +1,4 @@
-import { createPublicClient, http } from 'viem'
+import { createPublicClient, http, keccak256 } from 'viem'
 import { monadMainnet } from '../config/chain'
 import { ME_ADDRESS } from '../config/contract'
 import { ME_ABI } from '../abi/ME'
@@ -17,27 +17,13 @@ export async function verifyMEContract() {
     throw new Error('Không tìm thấy ME contract tại địa chỉ cấu hình')
   }
 
-  const [baseMon, totalSupply] = await Promise.all([
-    publicClient.readContract({
-      address: ME_ADDRESS,
-      abi: ME_ABI,
-      functionName: 'BASE_MON',
-    }),
-    publicClient.readContract({
-      address: ME_ADDRESS,
-      abi: ME_ABI,
-      functionName: 'TOTAL_SUPPLY',
-    }),
-  ])
+  const expectedRuntimeHash =
+    '0x5457562ea330655141bcbb9bd1216468a2eb565c066f186b4c281689cd8de1d2'
 
-  const expectedBaseMon = 100000n * 10n ** 18n
-  const expectedTotalSupply = 100000000000n * 10n ** 18n
+  const runtimeHash = keccak256(bytecode)
 
-  if (
-    baseMon !== expectedBaseMon ||
-    totalSupply !== expectedTotalSupply
-  ) {
-    throw new Error('Contract không khớp với ME contract mong đợi')
+  if (runtimeHash !== expectedRuntimeHash) {
+    throw new Error('Bytecode ME contract không khớp')
   }
 
   return true
