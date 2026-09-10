@@ -12,7 +12,7 @@ import {
 } from './config.js'
 import { LOOKBACKS, loadPriceChanges } from './history.js'
 import { formatPercent } from './curveMath.js'
-import { connectMetaMask, restoreMetaMaskProvider } from './wallet.js'
+import { connectMetaMask, disconnectMetaMask, invalidateMetaMaskClient, restoreMetaMaskProvider } from './wallet.js'
 
 const readProvider = new JsonRpcProvider(RPC_URL, MONAD.chainId, { staticNetwork: true })
 const readContract = new Contract(ME_ADDRESS, abi, readProvider)
@@ -93,6 +93,15 @@ function App() {
   const bps = useMemo(() => clampBps(slippage), [slippage])
   const minOut = useMemo(() => applySlippage(quote, bps), [quote, bps])
 
+  const clearWalletConnection = useCallback(() => {
+    invalidateMetaMaskClient()
+    setAccount('')
+    setWalletProvider(null)
+    setBalances({ mon: 0n, me: 0n })
+    setTxHash('')
+    setStatus('')
+  }, [])
+
   const refresh = useCallback(async () => {
     try {
       const [remaining, circulating, reserve, price, solvent, actual] = await Promise.all([
@@ -158,18 +167,57 @@ function App() {
   useEffect(() => {
     if (!walletProvider?.on) return undefined
     const onAccountsChanged = (accounts) => {
-      setAccount(accounts?.[0] || '')
+      if (!accounts?.[0]) {
+        clearWalletConnection()
+        return
+      }
+      setAccount(accounts[0])
       setTxHash('')
       setStatus('')
     }
+    const onDisconnect = () => clearWalletConnection()
     const onChainChanged = () => window.location.reload()
     walletProvider.on('accountsChanged', onAccountsChanged)
+    walletProvider.on('disconnect', onDisconnect)
     walletProvider.on('chainChanged', onChainChanged)
     return () => {
       walletProvider.removeListener?.('accountsChanged', onAccountsChanged)
+      walletProvider.removeListener?.('disconnect', onDisconnect)
       walletProvider.removeListener?.('chainChanged', onChainChanged)
     }
-  }, [walletProvider])
+  }, [walletProvider, clearWalletConnection])
+
+  useEffect(() => {
+    if (!walletProvider?.request) return undefined
+
+    let checking = false
+    const revalidateWalletConnection = async () => {
+      if (checking) return
+      checking = true
+      try {
+        const accounts = await walletProvider.request({ method: 'eth_accounts', params: [] })
+        if (!accounts?.[0]) clearWalletConnection()
+        else setAccount(accounts[0])
+      } catch {
+        // A transient relay/network error is not enough to declare the wallet disconnected.
+        // The provider's disconnect event remains the authoritative failure signal.
+      } finally {
+        checking = false
+      }
+    }
+
+    const onFocus = () => { void revalidateWalletConnection() }
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'visible') void revalidateWalletConnection()
+    }
+
+    window.addEventListener('focus', onFocus)
+    document.addEventListener('visibilitychange', onVisibilityChange)
+    return () => {
+      window.removeEventListener('focus', onFocus)
+      document.removeEventListener('visibilitychange', onVisibilityChange)
+    }
+  }, [walletProvider, clearWalletConnection])
 
   useEffect(() => {
     let cancelled = false
@@ -211,6 +259,13 @@ function App() {
     setError('')
     setWalletBusy(true)
     try {
+      if (walletProvider?.request) {
+        try {
+          const currentAccounts = await walletProvider.request({ method: 'eth_accounts', params: [] })
+          if (!currentAccounts?.[0]) clearWalletConnection()
+        } catch { /* reconnect below; disconnect listener handles authoritative session loss */ }
+      }
+
       const eip1193 = await connectMetaMask()
       await ensureMonad(eip1193)
       const provider = new BrowserProvider(eip1193)
@@ -220,6 +275,21 @@ function App() {
     } catch (e) {
       setError(explainError(e))
     } finally {
+      setWalletBusy(false)
+    }
+  }
+
+  async function disconnect() {
+    setError('')
+    setWalletBusy(true)
+    try {
+      if (walletProvider) {
+        await disconnectMetaMask(walletProvider)
+      }
+    } catch (e) {
+      setError(explainError(e))
+    } finally {
+      clearWalletConnection()
       setWalletBusy(false)
     }
   }
@@ -296,14 +366,13 @@ function App() {
       <div className="header-right">
         <span className="network"><i />Monad Mainnet</span>
         <button className="wallet" disabled={walletBusy} onClick={connect}>{account ? short(account) : walletBusy ? 'Opening MetaMask…' : 'Connect MetaMask'}</button>
+        {account && <button className="wallet" disabled={walletBusy} onClick={disconnect}>Disconnect</button>}
       </div>
     </header>
 
     <main>
       <section className="hero">
         <span className="eyebrow">ON-CHAIN BONDING CURVE</span>
-        <h1>Trade <em>ME</em> directly<br/>against the curve.</h1>
-        <p>No orderbook. No LP. Price is determined directly by the curve in ME.</p>
         <div className="change-strip" aria-label="ME marginal price changes">
           {LOOKBACKS.map(({ key }) => {
             const value = changes[key]
@@ -349,7 +418,6 @@ function App() {
           {status && <div className="notice success">{status}</div>}
           {error && <div className="notice error">{error}</div>}
           {txHash && <a className="tx" href={`${EXPLORER}/tx/${txHash}`} target="_blank" rel="noreferrer">View transaction ↗</a>}
-          <p className="hint">Quotes come from ME.sol. Slippage + deadline are enforced by the contract.</p>
         </section>
 
         <aside>

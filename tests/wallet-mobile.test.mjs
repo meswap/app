@@ -15,7 +15,7 @@ const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8')
 test('uses current MetaMask Connect EVM package for cross-platform MetaMask connection', () => {
   assert.equal(pkg.dependencies['@metamask/connect-evm'], '2.1.1')
   assert.match(wallet, /createEVMClient/)
-  assert.match(wallet, /client\.connect\(\{ chainIds: \[MONAD\.chainIdHex\] \}\)/)
+  assert.match(wallet, /forceRequest: true/)
   assert.match(wallet, /client\.getProvider\(\)/)
 })
 
@@ -54,4 +54,26 @@ test('requested presentation changes are included', () => {
   assert.match(app, /stats\.reserve \+ 100000n \* 10n \*\* 18n/)
   assert.match(app, /Trade directly through the ME bonding curve\./)
   assert.doesNotMatch(app, /Buy uses quoteBuy\(\) → buyME\(\)/)
+})
+
+test('wallet-side disconnect clears stale React state and SDK client', () => {
+  assert.match(wallet, /export function invalidateMetaMaskClient\(\)/)
+  assert.match(wallet, /disconnect:\s*\(\) => invalidateMetaMaskClient\(\)/)
+  assert.match(app, /walletProvider\.on\('disconnect', onDisconnect\)/)
+  assert.match(app, /walletProvider\.removeListener\?\.\('disconnect', onDisconnect\)/)
+  assert.match(app, /const onDisconnect = \(\) => clearWalletConnection\(\)/)
+  assert.match(app, /setWalletProvider\(null\)/)
+})
+
+test('empty accounts and browser resume revalidate a wallet-side disconnect', () => {
+  assert.match(app, /if \(!accounts\?\.\[0\]\) \{[\s\S]*clearWalletConnection\(\)/)
+  assert.match(app, /window\.addEventListener\('focus', onFocus\)/)
+  assert.match(app, /document\.addEventListener\('visibilitychange', onVisibilityChange\)/)
+  assert.match(app, /method: 'eth_accounts'/)
+})
+
+
+test('explicit reconnect forces a fresh MetaMask permission request', () => {
+  assert.match(wallet, /forceRequest: true/)
+  assert.match(wallet, /result\?\.accounts\?\.\[0\]/)
 })

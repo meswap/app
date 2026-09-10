@@ -3,6 +3,12 @@ import { MONAD, RPC_URL } from './config.js'
 
 let clientPromise
 
+export function invalidateMetaMaskClient() {
+  // A wallet-side disconnect can leave the browser holding the old SDK instance.
+  // Drop that in-memory instance so the next explicit connect starts from a fresh client.
+  clientPromise = undefined
+}
+
 function createClient() {
   if (!clientPromise) {
     clientPromise = createEVMClient({
@@ -16,6 +22,9 @@ function createClient() {
         },
       },
       analytics: { enabled: false },
+      eventHandlers: {
+        disconnect: () => invalidateMetaMaskClient(),
+      },
     })
   }
   return clientPromise
@@ -31,7 +40,18 @@ export async function connectMetaMask() {
   }
 
   const client = await createClient()
-  await client.connect({ chainIds: [MONAD.chainIdHex] })
+
+  // A user-initiated Connect must not silently reuse a stale persisted
+  // MetaMask Connect session after the dapp was disconnected in the wallet.
+  const result = await client.connect({
+    chainIds: [MONAD.chainIdHex],
+    forceRequest: true,
+  })
+
+  if (!result?.accounts?.[0]) {
+    throw new Error('MetaMask did not return a connected account')
+  }
+
   return client.getProvider()
 }
 
@@ -42,5 +62,21 @@ export async function restoreMetaMaskProvider() {
     return client.getProvider()
   } catch {
     return null
+  }
+}
+
+export async function disconnectMetaMask(provider) {
+  try {
+    if (window.ethereum?.isMetaMask && provider === window.ethereum) {
+      await provider.request({
+        method: 'wallet_revokePermissions',
+        params: [{ eth_accounts: {} }],
+      })
+    } else {
+      const client = await createClient()
+      await client.disconnect()
+    }
+  } finally {
+    invalidateMetaMaskClient()
   }
 }
