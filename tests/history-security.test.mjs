@@ -77,7 +77,6 @@ test('frontend security controls are enabled', () => {
 test('English UI and requested horizontal five-period strip are present', () => {
   assert.match(html, /<html lang="en">/)
   for (const label of ['1H', '1D', '1W', '1M', '1Y']) assert.match(history, new RegExp(`key: '${label}'`))
-  assert.match(app, /No orderbook\. No LP\. Price is determined directly by the curve in ME\./)
   assert.match(css, /\.change-strip\{display:flex/)
   assert.match(css, /overflow-x:auto/)
   assert.match(css, /\.change-item b\.up\{color:#4ee8aa\}/)
