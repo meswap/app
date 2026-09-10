@@ -295,7 +295,7 @@ function App() {
       <div className="brand"><span className="brandmark">ME</span><span>ME Exchange</span></div>
       <div className="header-right">
         <span className="network"><i />Monad Mainnet</span>
-        <button className="wallet" disabled={walletBusy} onClick={connect}>{account ? short(account) : walletBusy ? 'Opening MetaMask…' : 'Connect Wallet'}</button>
+        <button className="wallet" disabled={walletBusy} onClick={connect}>{account ? short(account) : walletBusy ? 'Opening MetaMask…' : 'Connect MetaMask'}</button>
       </div>
     </header>
 
@@ -344,12 +344,12 @@ function App() {
           </div>
 
           <button className="primary" disabled={busy} onClick={trade}>
-            {busy ? 'Processing…' : !account ? 'Connect Wallet' : mode === 'buy' ? 'Buy ME' : 'Sell ME'}
+            {busy ? 'Processing…' : !account ? 'Connect MetaMask' : mode === 'buy' ? 'Buy ME' : 'Sell ME'}
           </button>
           {status && <div className="notice success">{status}</div>}
           {error && <div className="notice error">{error}</div>}
           {txHash && <a className="tx" href={`${EXPLORER}/tx/${txHash}`} target="_blank" rel="noreferrer">View transaction ↗</a>}
-          <p className="hint"></p>
+          <p className="hint">Quotes come from ME.sol. Slippage + deadline are enforced by the contract.</p>
         </section>
 
         <aside>
