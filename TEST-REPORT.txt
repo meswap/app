@@ -1,14 +1,60 @@
-ME Exchange English Pro v2.2 — Test Report
+ME DApp English Pro v2.1 — Test Report
+========================================
 
-Result: 28 tests passed, 0 failed, 0 skipped.
+Date: 2026-09-10
+Contract: 0x6936960d0B04e255B48f4bBD8d03fACE78Ef77Ab
+Network: Monad Mainnet (Chain 143)
 
-v2.2 change:
-- Current Price is computed locally as (Actual MON + 100,000 MON) / Remaining ME using 18-decimal integer math.
-- The normal 12-second state refresh no longer calls currentPrice(), reducing one RPC call per refresh.
-- Buy/Sell quoting and execution remain unchanged and contract-driven.
-- Historical 1H/1D/1W/1M/1Y pricing remains on-chain using historical currentPrice() calls.
-- Visible wallet copy is generic (Connect Wallet); visible ME.sol/function-name hint text was removed.
+AUTOMATED TEST RESULT
+---------------------
+Command: npm test
+Tests: 27
+Passed: 27
+Failed: 0
+Skipped: 0
 
-Validation includes curve invariants, buy/sell transitions, deterministic 1,000-step stress testing, slippage/deadline controls, ABI trading surface, historical price logic, fixed four-decimal percentage formatting, mobile MetaMask Connect flow, CSP/analytics settings, session restore, and requested UI presentation.
+Coverage includes:
+- ME.sol constants and curve arithmetic
+- Buy quote/execution state transition consistency
+- Buy -> sell round trip reserve safety
+- Positive price impact for larger buys
+- Seller balance and zero-input rejection
+- 100 sequential buy invariant test
+- 50 buys + partial sells reserve test
+- Slippage-floor safety and monotonicity
+- Deterministic 1,000-step mixed buy/sell curve stress test
+- Historical marginal-price formula
+- Historical contract currentPrice() block reads
+- Signed percentage formatting to exactly 4 decimals
+- 1H / 1D / 1W / 1M / 1Y horizontal strip
+- ABI trading surface validation
+- Buy/Sell frontend path validation
+- No sell approve() path
+- 3-minute block-timestamp deadline
+- Maximum slippage bound
+- Fresh quote immediately before transaction submission
+- Monad switch + add-network paths
+- accountsChanged + chainChanged handling
+- Input precision validation
+- English-only UI checks
+- MetaMask Connect EVM 2.1.1 integration
+- Native MetaMask injected-provider preference
+- Remote/mobile EIP-1193 provider use in transaction path
+- Provider-agnostic Monad network switching
+- MetaMask Connect analytics disabled
+- CSP MetaMask relay allowance
+- Persisted-session restoration check
+- Requested hero text, virtual reserve display and non-technical safety copy
 
-Note: dependency installation / production Vite build should be run in Termux before deployment because this isolated build environment does not have registry access.
+IMPORTANT BUILD NOTE
+--------------------
+The package archive intentionally does not include node_modules. In this build
+environment outbound npm registry access was unavailable, so a production Vite
+bundle could not be regenerated here after adding @metamask/connect-evm.
+On Termux, run:
+
+  npm install
+  npm test
+  npm run build
+
+Only deploy after npm run build completes successfully in your environment.

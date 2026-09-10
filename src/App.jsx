@@ -29,10 +29,7 @@ const clean = (value, digits = 6) => {
   if (!Number.isFinite(n)) return '0'
   return n.toLocaleString('en-US', { maximumFractionDigits: digits })
 }
-const WAD = 10n ** 18n
-const BASE_MON_WEI = 100000n * WAD
 const applySlippage = (value, bps) => value * (10000n - BigInt(bps)) / 10000n
-const currentPriceFromState = (actual, remaining) => remaining > 0n ? ((actual + BASE_MON_WEI) * WAD) / remaining : 0n
 const isValidAmountText = (value) => /^\d*(?:\.\d{0,18})?$/.test(value)
 
 function collectErrorData(err) {
@@ -54,8 +51,8 @@ const friendlyErrors = {
   InsufficientMON: 'The contract does not hold enough MON to settle this sell order.',
   SlippageExceeded: 'Price moved beyond your slippage limit. Refresh the quote and try again.',
   DeadlineExpired: 'The order expired before execution. Request a fresh quote and try again.',
-  DirectMONNotAllowed: 'Direct MON transfers are rejected. Use the trading interface instead.',
-  DirectMEToContractNotAllowed: 'Direct ME transfers are rejected. Use the trading interface instead.',
+  DirectMONNotAllowed: 'MON must be bought through buyME(); direct transfers are rejected.',
+  DirectMEToContractNotAllowed: 'ME must be sold through sellME(); direct transfers are rejected.',
   MONTransferFailed: 'The contract could not transfer MON to your wallet.',
   InvalidState: 'The curve rejected the transaction because its state is invalid.',
 }
@@ -98,14 +95,14 @@ function App() {
 
   const refresh = useCallback(async () => {
     try {
-      const [remaining, circulating, reserve, solvent, actual] = await Promise.all([
+      const [remaining, circulating, reserve, price, solvent, actual] = await Promise.all([
         readContract.remainingME(),
         readContract.circulatingME(),
         readContract.reserveMON(),
+        readContract.currentPrice(),
         readContract.reserveSolvent(),
         readContract.actualMON(),
       ])
-      const price = currentPriceFromState(actual, remaining)
       setStats({ remaining, circulating, reserve, price, solvent, actual })
       if (account) {
         const [mon, me] = await Promise.all([
@@ -298,7 +295,7 @@ function App() {
       <div className="brand"><span className="brandmark">ME</span><span>ME Exchange</span></div>
       <div className="header-right">
         <span className="network"><i />Monad Mainnet</span>
-        <button className="wallet" disabled={walletBusy} onClick={connect}>{account ? short(account) : walletBusy ? 'Opening Wallet…' : 'Connect Wallet'}</button>
+        <button className="wallet" disabled={walletBusy} onClick={connect}>{account ? short(account) : walletBusy ? 'Opening MetaMask…' : 'Connect Wallet'}</button>
       </div>
     </header>
 
@@ -352,6 +349,7 @@ function App() {
           {status && <div className="notice success">{status}</div>}
           {error && <div className="notice error">{error}</div>}
           {txHash && <a className="tx" href={`${EXPLORER}/tx/${txHash}`} target="_blank" rel="noreferrer">View transaction ↗</a>}
+          <p className="hint"></p>
         </section>
 
         <aside>

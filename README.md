@@ -60,7 +60,3 @@ npm run dev -- --host 0.0.0.0
 ```
 
 The included automated source/math/security suite currently contains 27 tests. See `TEST-REPORT.txt`.
-
-## v2.2 current-price optimization
-
-Current Price is calculated locally from `(Actual MON + 100,000 MON) / Remaining ME`, using values already fetched for the stats panel. This removes one RPC call from the regular 12-second state refresh. Trading quotes and execution remain contract-driven, and historical price lookbacks remain on-chain.

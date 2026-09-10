@@ -23,16 +23,6 @@ test('historical marginal price formula matches ME.sol currentPrice formula', ()
   assert.equal(curvePrice(0n, 100_000_000_000n * E), expected)
 })
 
-
-
-test('current price is computed locally from Actual MON plus 100k virtual MON divided by Remaining ME', () => {
-  assert.match(app, /const BASE_MON_WEI = 100000n \* WAD/)
-  assert.match(app, /currentPriceFromState = \(actual, remaining\)/)
-  assert.match(app, /\(\(actual \+ BASE_MON_WEI\) \* WAD\) \/ remaining/)
-  const refreshBlock = app.slice(app.indexOf('const refresh = useCallback'), app.indexOf('const refreshHistory = useCallback'))
-  assert.doesNotMatch(refreshBlock, /readContract\.currentPrice\(\)/)
-})
-
 test('price history calls the contract currentPrice view at historical block tags', () => {
   assert.match(history, /contract\.currentPrice\(\{ blockTag: targetBlock \}\)/)
   assert.match(history, /latest\.timestamp - item\.seconds/)
