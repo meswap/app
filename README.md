@@ -1,32 +1,62 @@
-# React + TypeScript + Vite
+# ME Exchange — English Pro v2.1
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+React + Vite frontend for the supplied `ME.sol` bonding-curve contract on Monad Mainnet.
 
-Currently, two official plugins are available:
+## Contract
+- Network: Monad Mainnet
+- Chain ID: 143 (`0x8f`)
+- RPC: `https://rpc.monad.xyz`
+- ME contract: `0x6936960d0B04e255B48f4bBD8d03fACE78Ef77Ab`
+- Native asset: MON
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Trading logic aligned with ME.sol
+- Buy uses the contract quote and then `buyME(minMeOut, deadline)` with `msg.value = monIn`.
+- Sell uses the seller-specific contract quote and then `sellME(meIn, minMonOut, deadline)`.
+- Sell does not request ERC-20 approval because `ME.sol` performs its guarded internal sell transfer.
+- Default slippage: 0.50%, user-adjustable up to 5%.
+- Deadline: 3 minutes from the latest Monad block timestamp.
+- A fresh quote is fetched immediately before transaction submission.
+- Direct MON transfers and direct ME transfers to the contract are never used by the frontend.
 
-## React Compiler
+## Cross-platform MetaMask connection
+This version uses `@metamask/connect-evm` 2.1.1, the current MetaMask Connect EVM integration.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- MetaMask browser extension / MetaMask in-app browser: uses the native injected provider.
+- Chrome/Safari mobile without an injected provider: MetaMask Connect opens the MetaMask mobile app through its cross-platform connection flow and returns an EIP-1193 provider.
+- Desktop without the extension: MetaMask Connect can use its QR/mobile flow.
+- Existing sessions are checked with `eth_accounts` on reload without requesting account access automatically.
+- Monad switching/adding is performed through the provider that actually connected, not hard-coded `window.ethereum`.
+- MetaMask Connect analytics are disabled.
+- CSP allows only the MetaMask Connect relay required for remote wallet connections plus the Monad RPC.
 
-## Expanding the Oxlint configuration
+## Price-change strip
+The horizontal strip shows 1H / 1D / 1W / 1M / 1Y marginal-price changes to exactly four decimal places. Positive values are green, negative values are red. Historical values are read from the same contract `currentPrice()` view at historical Monad blocks; no CoinGecko/DEX price API is used. If the RPC cannot provide historical state, the UI shows `N/A`.
 
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
+## Display details requested
+- Hero text: `No orderbook. No LP. Price is determined directly by the curve in ME.`
+- Curve reserve display: virtual reserve = `100,000 MON + reserveMON`.
+- Actual MON remains the contract's actual MON balance.
+- The public safety text does not expose internal function names.
 
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+## Security controls
+- No private keys or seed phrases are requested or stored.
+- Chain is verified/switched to Monad Mainnet before signing.
+- Account and chain changes are handled explicitly.
+- Contract custom errors are decoded when revert data is available.
+- Amount input is restricted to valid decimal text with at most 18 decimals.
+- Slippage is bounded to 0–5%.
+- `minOut` and deadline remain final on-chain protections.
+- Fresh on-chain quote immediately before transaction submission.
+- Deadline uses the Monad block timestamp rather than the phone clock.
+- Restrictive Content Security Policy.
+- No external fonts, price APIs, or analytics.
+
+## Termux
+```bash
+npm install
+npm test
+npm run build
+npm run dev -- --host 0.0.0.0
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+The included automated source/math/security suite currently contains 27 tests. See `TEST-REPORT.txt`.
